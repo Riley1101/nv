@@ -108,7 +108,9 @@ pub fn write_json(project: Project) {
     if !check_file() {
         fs::write(&path, "").expect("Unable to write file");
     }
-    let contents = fs::read_to_string(&path).expect("Should have been able to read the file {&path}");
+    println!("path: {}", path);
+    let contents =
+        fs::read_to_string(&path).expect("Should have been able to read the file {&path}");
     // create new array if content is empty
     if contents == "" {
         let projects: Vec<Project> = vec![project];
@@ -133,8 +135,9 @@ pub fn read_projects() -> Vec<Project> {
     if !check_file() {
         return vec![];
     };
+    let path  = get_home_file();
     let contents =
-        fs::read_to_string("projects.json").expect("Should have been able to read the file");
+        fs::read_to_string(path).expect("Should have been able to read the file");
     let projects: Vec<Project> = serde_json::from_str(&contents).unwrap();
     projects
 }
