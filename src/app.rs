@@ -1,5 +1,6 @@
 use crate::projects::{read_projects, Project};
 use crossterm::event::{self, Event, KeyCode};
+use std::process::Command;
 use std::{io, vec};
 use tui::{
     backend::Backend,
@@ -19,7 +20,6 @@ pub enum InputMode {
 pub struct UIApp {
     input: String,
     input_mode: InputMode,
-    messages: Vec<String>,
     projects: Vec<Project>,
 }
 
@@ -28,7 +28,6 @@ impl Default for UIApp {
         Self {
             input: String::new(),
             input_mode: InputMode::Normal,
-            messages: Vec::new(),
             projects: read_projects(),
         }
     }
@@ -50,15 +49,46 @@ pub fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: UIApp) -> io::Re
                 },
                 InputMode::Editing => match key.code {
                     KeyCode::Enter => {
-                        app.messages.push(app.input.drain(..).collect());
+                        println!("Navigate to project");
+                        let p = app.projects.first();
+                        match p {
+                            Some(p) => {
+                                println!("Navigating to project: {}", p.path);
+                                let cmd = Command::new("/usr/bin/sh")
+                                    .arg("-c")
+                                    .arg(format!("cd {} && nvim .", p.path))
+                                    .spawn()
+                                    .expect("Error: Failed to run editor")
+                                    .wait()
+                                    .expect("Error: Editor returned a non-zero status");
+                                if cmd.success() {
+                                    println!("Editor exited successfully");
+                                    // quit the run_app
+                                    return Ok(());
+                                } else {
+                                    println!("Editor exited with error");
+                                }
+                            }
+                            None => {
+                                println!("No project found");
+                            }
+                        }
                     }
                     KeyCode::Char(c) => {
                         app.input.push(c);
+                        // filter projects with matching input if input delete the list should be reset
+                        app.projects = read_projects()
+                            .into_iter()
+                            .filter(|p| p.title.contains(&app.input))
+                            .collect();
                     }
                     KeyCode::Backspace => {
                         app.input.pop();
                     }
-                    KeyCode::Esc => app.input_mode = InputMode::Normal,
+                    KeyCode::Esc => {
+                        app.input_mode = InputMode::Normal;
+                        app.projects = read_projects();
+                    }
                     _ => {}
                 },
             }
@@ -83,10 +113,10 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &UIApp) {
         InputMode::Normal => (
             vec![
                 Span::raw("Press "),
-                Span::styled("q", Style::default().add_modifier(Modifier::BOLD)),
+                Span::styled("ESC", Style::default().add_modifier(Modifier::BOLD)),
                 Span::raw(" to exit, "),
-                Span::styled("e", Style::default().add_modifier(Modifier::BOLD)),
-                Span::raw(" to start editing."),
+                Span::styled("i", Style::default().add_modifier(Modifier::BOLD)),
+                Span::raw(" to navigate to project."),
             ],
             Style::default().add_modifier(Modifier::RAPID_BLINK),
         ),
@@ -136,26 +166,37 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &UIApp) {
     let projects: Vec<ListItem> = app
         .projects
         .iter()
-        .map(|p| {
-            let content = vec![Spans::from(Span::raw(format!("{:#?}", p)))];
-            ListItem::new(content)
+        .enumerate()
+        .map(|(i, p)| {
+            if i == 0 {
+                let content = vec![Spans::from(Span::raw(format!(
+                    "[ * ] {} - {}",
+                    p.title, p.path
+                )))];
+                ListItem::new(content)
+            } else {
+                let content = vec![Spans::from(Span::raw(format!(
+                    "[ ] {} - {}",
+                    p.title, p.path
+                )))];
+                ListItem::new(content)
+            }
+        })
+        // style the first one with index
+        .enumerate()
+        .map(|(i, li)| {
+            if i == 0 {
+                // add arrow
+                let mut li = li;
+                li = li.style(Style::default().add_modifier(Modifier::BOLD));
+                li.style(Style::default().fg(Color::Yellow))
+            } else {
+                li
+            }
         })
         .collect();
     let projects =
         List::new(projects).block(Block::default().borders(Borders::ALL).title("Projects"));
-    f.render_widget(projects, chunks[2])
 
-    // render messages
-    // let messages: Vec<ListItem> = app
-    //     .messages
-    //     .iter()
-    //     .enumerate()
-    //     .map(|(i, m)| {
-    //         let content = vec![Spans::from(Span::raw(format!("{}: {}", i, m)))];
-    //         ListItem::new(content)
-    //     })
-    //     .collect();
-    // let messages =
-    //     List::new(messages).block(Block::default().borders(Borders::ALL).title("Messages"));
-    // f.render_widget(messages, chunks[2]);
+    f.render_widget(projects, chunks[2])
 }

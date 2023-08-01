@@ -97,6 +97,7 @@ pub fn check_file() -> bool {
         Err(_) => false,
     }
 }
+
 pub fn write_json(project: Project) {
     if !check_file() {
         fs::write("projects.json", "").expect("unable to write file");
