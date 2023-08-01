@@ -3,12 +3,29 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use std::env;
 
 use startify::app::{run_app, UIApp};
+use startify::projects::mark;
 use std::{error::Error, io};
 use tui::{backend::CrosstermBackend, Terminal};
 
-fn main() -> Result<(), Box<dyn Error>> {
+#[derive(Debug)]
+enum Mode {
+    Open,
+    Mark,
+}
+
+fn check_open_or_mark() -> Mode {
+    let args = env::args().collect::<Vec<String>>();
+    if args.len() == 3 {
+        Mode::Mark
+    } else {
+        Mode::Open
+    }
+}
+
+fn open() -> Result<(), Box<dyn Error>> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
@@ -25,6 +42,18 @@ fn main() -> Result<(), Box<dyn Error>> {
         DisableMouseCapture
     )?;
     terminal.show_cursor()?;
-    // clear terminal
     Ok(())
+}
+
+fn main() {
+    let _mode = check_open_or_mark();
+    println!("mode: {:?}", _mode);
+    match _mode {
+        Mode::Open => {
+            open().expect("Error running open mode");
+        }
+        Mode::Mark => {
+            mark();
+        }
+    }
 }

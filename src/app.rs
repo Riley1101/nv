@@ -1,3 +1,4 @@
+use crate::projects::{read_projects, Project};
 use crossterm::event::{self, Event, KeyCode};
 use std::{io, vec};
 use tui::{
@@ -19,6 +20,7 @@ pub struct UIApp {
     input: String,
     input_mode: InputMode,
     messages: Vec<String>,
+    projects: Vec<Project>,
 }
 
 impl Default for UIApp {
@@ -27,13 +29,14 @@ impl Default for UIApp {
             input: String::new(),
             input_mode: InputMode::Normal,
             messages: Vec::new(),
+            projects: read_projects(),
         }
     }
 }
 
 pub fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: UIApp) -> io::Result<()> {
     loop {
-        terminal.draw(|f| ui(f, &app));
+        let _ = terminal.draw(|f| ui(f, &app));
         if let Event::Key(key) = event::read()? {
             match app.input_mode {
                 InputMode::Normal => match key.code {
@@ -129,17 +132,30 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &UIApp) {
         }
     }
 
-    // render messages
-    let messages: Vec<ListItem> = app
-        .messages
+    // render projects
+    let projects: Vec<ListItem> = app
+        .projects
         .iter()
-        .enumerate()
-        .map(|(i, m)| {
-            let content = vec![Spans::from(Span::raw(format!("{}: {}", i, m)))];
+        .map(|p| {
+            let content = vec![Spans::from(Span::raw(format!("{:#?}", p)))];
             ListItem::new(content)
         })
         .collect();
-    let messages =
-        List::new(messages).block(Block::default().borders(Borders::ALL).title("Messages"));
-    f.render_widget(messages, chunks[2]);
+    let projects =
+        List::new(projects).block(Block::default().borders(Borders::ALL).title("Projects"));
+    f.render_widget(projects, chunks[2])
+
+    // render messages
+    // let messages: Vec<ListItem> = app
+    //     .messages
+    //     .iter()
+    //     .enumerate()
+    //     .map(|(i, m)| {
+    //         let content = vec![Spans::from(Span::raw(format!("{}: {}", i, m)))];
+    //         ListItem::new(content)
+    //     })
+    //     .collect();
+    // let messages =
+    //     List::new(messages).block(Block::default().borders(Borders::ALL).title("Messages"));
+    // f.render_widget(messages, chunks[2]);
 }

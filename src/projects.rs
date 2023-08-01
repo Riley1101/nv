@@ -64,9 +64,9 @@ impl<'de> Visitor<'de> for CustomVisitor {
         }
 
         if title.is_none() || path.is_none() {
-            return Err(serde::de::Error::custom("Missing first or second"));
+            return Err(serde::de::Error::custom("Missing title or path"));
         };
-        return Ok(Project::new(title.unwrap(), path.unwrap()));
+        return Ok(Project::new(path.unwrap(), title.unwrap()));
     }
 }
 
@@ -84,15 +84,35 @@ pub fn get_project() -> Project {
     Project::new(path, title)
 }
 
-pub fn mark_project() {
+pub fn mark() {
     let project = get_project();
     write_json(project);
 }
 
+pub fn check_file() -> bool {
+    // check if project.json exists
+    let file = String::from("projects.json");
+    match fs::metadata(file) {
+        Ok(_) => true,
+        Err(_) => false,
+    }
+}
 pub fn write_json(project: Project) {
+    if !check_file() {
+        fs::write("projects.json", "").expect("unable to write file");
+    }
     let contents =
         fs::read_to_string("projects.json").expect("Should have been able to read the file");
+    // create new array if content is empty
+    if contents == "" {
+        let projects: Vec<Project> = vec![project];
+        let json = serde_json::to_string(&projects).unwrap();
+        fs::write("projects.json", json).expect("Unable to write file");
+        return;
+    }
+
     let mut projects: Vec<Project> = serde_json::from_str(&contents).unwrap();
+
     // check if project exist in projects
     if projects.iter().any(|p| p.path == project.path) {
         println!("Project with path - {} already exist", project.path);
@@ -101,4 +121,14 @@ pub fn write_json(project: Project) {
     projects.push(project);
     let json = serde_json::to_string(&projects).unwrap();
     fs::write("projects.json", json).expect("Unable to write file");
+}
+
+pub fn read_projects() -> Vec<Project> {
+    if !check_file() {
+        return vec![];
+    };
+    let contents =
+        fs::read_to_string("projects.json").expect("Should have been able to read the file");
+    let projects: Vec<Project> = serde_json::from_str(&contents).unwrap();
+    projects
 }
