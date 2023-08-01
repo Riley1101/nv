@@ -1,6 +1,7 @@
 use serde::ser::SerializeMap;
 use serde::{de::MapAccess, de::Visitor, Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
+use std::{env, fs};
 
 #[derive(Debug)]
 pub struct Project {
@@ -67,4 +68,37 @@ impl<'de> Visitor<'de> for CustomVisitor {
         };
         return Ok(Project::new(title.unwrap(), path.unwrap()));
     }
+}
+
+pub fn get_project() -> Project {
+    let args: Vec<String> = env::args().collect();
+    // require at least 2 args
+    if args.len() < 2 {
+        panic!("not enough arguments");
+    };
+    let mut path = args[1].clone();
+    if path == "." {
+        path = env::current_dir().unwrap().to_str().unwrap().to_string();
+    };
+    let title = args[2].clone();
+    Project::new(path, title)
+}
+
+pub fn mark_project() {
+    let project = get_project();
+    write_json(project);
+}
+
+pub fn write_json(project: Project) {
+    let contents =
+        fs::read_to_string("projects.json").expect("Should have been able to read the file");
+    let mut projects: Vec<Project> = serde_json::from_str(&contents).unwrap();
+    // check if project exist in projects
+    if projects.iter().any(|p| p.path == project.path) {
+        println!("Project with path - {} already exist", project.path);
+        return;
+    }
+    projects.push(project);
+    let json = serde_json::to_string(&projects).unwrap();
+    fs::write("projects.json", json).expect("Unable to write file");
 }

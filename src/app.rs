@@ -1,22 +1,7 @@
-/// A simple example demonstrating how to handle user input. This is
-/// a bit out of the scope of the library as it does not provide any
-/// input handling out of the box. However, it may helps some to get
-/// started.
-///
-/// This is a very simple example:
-///   * A input box always focused. Every character you type is registered
-///   here
-///   * Pressing Backspace erases a character
-///   * Pressing Enter pushes the current input in the history of previous
-///   messages
-use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
-    execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
-};
-use std::{error::Error, io};
+use crossterm::event::{self, Event, KeyCode};
+use std::{io, vec};
 use tui::{
-    backend::{Backend, CrosstermBackend},
+    backend::Backend,
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
     text::{Span, Spans, Text},
@@ -25,24 +10,20 @@ use tui::{
 };
 use unicode_width::UnicodeWidthStr;
 
-enum InputMode {
+pub enum InputMode {
     Normal,
     Editing,
 }
 
-/// App holds the state of the application
-struct App {
-    /// Current value of the input box
+pub struct UIApp {
     input: String,
-    /// Current input mode
     input_mode: InputMode,
-    /// History of recorded messages
     messages: Vec<String>,
 }
 
-impl Default for App {
-    fn default() -> App {
-        App {
+impl Default for UIApp {
+    fn default() -> Self {
+        Self {
             input: String::new(),
             input_mode: InputMode::Normal,
             messages: Vec::new(),
@@ -50,45 +31,16 @@ impl Default for App {
     }
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
-    // setup terminal
-    enable_raw_mode()?;
-    let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
-    let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
-
-    // create app and run it
-    let app = App::default();
-    let res = run_app(&mut terminal, app);
-
-    // restore terminal
-    disable_raw_mode()?;
-    execute!(
-        terminal.backend_mut(),
-        LeaveAlternateScreen,
-        DisableMouseCapture
-    )?;
-    terminal.show_cursor()?;
-
-    if let Err(err) = res {
-        println!("{:?}", err)
-    }
-
-    Ok(())
-}
-
-fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<()> {
+pub fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: UIApp) -> io::Result<()> {
     loop {
-        terminal.draw(|f| ui(f, &app))?;
-
+        terminal.draw(|f| ui(f, &app));
         if let Event::Key(key) = event::read()? {
             match app.input_mode {
                 InputMode::Normal => match key.code {
-                    KeyCode::Char('e') => {
+                    KeyCode::Char('i') => {
                         app.input_mode = InputMode::Editing;
                     }
-                    KeyCode::Char('q') => {
+                    KeyCode::Esc => {
                         return Ok(());
                     }
                     _ => {}
@@ -103,17 +55,15 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                     KeyCode::Backspace => {
                         app.input.pop();
                     }
-                    KeyCode::Esc => {
-                        app.input_mode = InputMode::Normal;
-                    }
+                    KeyCode::Esc => app.input_mode = InputMode::Normal,
                     _ => {}
                 },
             }
-        }
+        };
     }
 }
 
-fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
+pub fn ui<B: Backend>(f: &mut Frame<B>, app: &UIApp) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .margin(2)
@@ -126,7 +76,6 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
             .as_ref(),
         )
         .split(f.size());
-
     let (msg, style) = match app.input_mode {
         InputMode::Normal => (
             vec![
@@ -149,6 +98,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
             Style::default(),
         ),
     };
+
     let mut text = Text::from(Spans::from(msg));
     text.patch_style(style);
     let help_message = Paragraph::new(text);
@@ -160,7 +110,9 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
             InputMode::Editing => Style::default().fg(Color::Yellow),
         })
         .block(Block::default().borders(Borders::ALL).title("Input"));
+    // render input
     f.render_widget(input, chunks[1]);
+
     match app.input_mode {
         InputMode::Normal =>
             // Hide the cursor. `Frame` does this by default, so we don't need to do anything here
@@ -177,6 +129,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
         }
     }
 
+    // render messages
     let messages: Vec<ListItem> = app
         .messages
         .iter()
@@ -190,4 +143,3 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
         List::new(messages).block(Block::default().borders(Borders::ALL).title("Messages"));
     f.render_widget(messages, chunks[2]);
 }
-
