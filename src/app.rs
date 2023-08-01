@@ -42,6 +42,10 @@ pub fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: UIApp) -> io::Re
                     KeyCode::Char('i') => {
                         app.input_mode = InputMode::Editing;
                     }
+                    KeyCode::Enter => {
+                        let project = &app.projects;
+                        println!("Navigate to project: {:#?}", &project);
+                    }
                     KeyCode::Esc => {
                         return Ok(());
                     }

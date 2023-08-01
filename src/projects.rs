@@ -89,9 +89,14 @@ pub fn mark() {
     write_json(project);
 }
 
+pub fn get_home_file() -> String {
+    let home = env::var("HOME").unwrap();
+    format!("{}/startify.json", home)
+}
+
 pub fn check_file() -> bool {
     // check if project.json exists
-    let file = String::from("projects.json");
+    let file = get_home_file();
     match fs::metadata(file) {
         Ok(_) => true,
         Err(_) => false,
@@ -99,16 +104,16 @@ pub fn check_file() -> bool {
 }
 
 pub fn write_json(project: Project) {
+    let path = get_home_file();
     if !check_file() {
-        fs::write("projects.json", "").expect("unable to write file");
+        fs::write(&path, "").expect("Unable to write file");
     }
-    let contents =
-        fs::read_to_string("projects.json").expect("Should have been able to read the file");
+    let contents = fs::read_to_string(&path).expect("Should have been able to read the file {&path}");
     // create new array if content is empty
     if contents == "" {
         let projects: Vec<Project> = vec![project];
         let json = serde_json::to_string(&projects).unwrap();
-        fs::write("projects.json", json).expect("Unable to write file");
+        fs::write(&path, json).expect("Unable to write file");
         return;
     }
 
@@ -121,7 +126,7 @@ pub fn write_json(project: Project) {
     }
     projects.push(project);
     let json = serde_json::to_string(&projects).unwrap();
-    fs::write("projects.json", json).expect("Unable to write file");
+    fs::write(&path, json).expect("Unable to write file");
 }
 
 pub fn read_projects() -> Vec<Project> {

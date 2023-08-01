@@ -25,3 +25,22 @@ features = [
   "fast-rng",          # Use a faster (but still sufficiently random) RNG
   "macro-diagnostics", # Enable better diagnostics for compile-time UUIDs
 ]
+
+# add license
+[package.metadata.deb]
+maintainer = "Arkar K Myat<arkardev00@gmail.com>"
+copyright = "Use as you like my love!"
+license-file = ["LICENSE", "4"]
+extended-description = """\
+Project file management cli tool with Rust.\
+"""
+depends = "$auto"
+section = "utility"
+priority = "optional"
+assets = [
+  [
+    "target/release/startify",
+    "usr/bin/",
+    "755",
+  ],
+]
