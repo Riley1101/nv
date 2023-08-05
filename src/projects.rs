@@ -108,7 +108,6 @@ pub fn write_json(project: Project) {
     if !check_file() {
         fs::write(&path, "").expect("Unable to write file");
     }
-    println!("path: {}", path);
     let contents =
         fs::read_to_string(&path).expect("Should have been able to read the file {&path}");
     // create new array if content is empty

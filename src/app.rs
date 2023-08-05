@@ -1,6 +1,6 @@
 use crate::projects::{read_projects, Project};
+use crate::shell::execute_command;
 use crossterm::event::{self, Event, KeyCode};
-use std::process::Command;
 use std::{io, vec};
 use tui::{
     backend::Backend,
@@ -21,14 +21,39 @@ pub struct UIApp {
     input: String,
     input_mode: InputMode,
     projects: Vec<Project>,
+    log: String,
+}
+
+impl UIApp {
+    fn filter_projects(&mut self) {
+        self.projects = read_projects()
+            .into_iter()
+            .filter(|p| p.title.contains(&self.input))
+            .collect();
+    }
+
+    fn get_input_project(&mut self) -> Option<&Project> {
+        let mut iter = self.projects.iter();
+        let p = iter.find(|&x| x.title.contains(&self.input));
+        match p {
+            Some(p) => {
+                self.log = p.path.clone();
+            }
+            None => {
+                self.log = String::from("No project found");
+            }
+        }
+        p
+    }
 }
 
 impl Default for UIApp {
     fn default() -> Self {
         Self {
             input: String::new(),
-            input_mode: InputMode::Normal,
+            input_mode: InputMode::Editing,
             projects: read_projects(),
+            log: String::new(),
         }
     }
 }
@@ -43,8 +68,16 @@ pub fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: UIApp) -> io::Re
                         app.input_mode = InputMode::Editing;
                     }
                     KeyCode::Enter => {
-                        let project = &app.projects;
-                        println!("Navigate to project: {:#?}", &project);
+                        let to_go = app.get_input_project();
+                        match to_go {
+                            Some(p) => {
+                                //let _ = execute_command(&p.path);
+                                app.log = p.title.clone();
+                            }
+                            None => {
+                                println!("No project found");
+                            }
+                        }
                     }
                     KeyCode::Esc => {
                         return Ok(());
@@ -52,25 +85,25 @@ pub fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: UIApp) -> io::Re
                     _ => {}
                 },
                 InputMode::Editing => match key.code {
+                    KeyCode::Up => {
+                        app.input_mode = InputMode::Normal;
+                        app.get_input_project();
+                    }
                     KeyCode::Enter => {
                         println!("Navigate to project");
                         let p = app.projects.first();
                         match p {
                             Some(p) => {
                                 println!("Navigating to project: {}", p.path);
-                                let cmd = Command::new("/usr/bin/sh")
-                                    .arg("-c")
-                                    .arg(format!("cd {} && nvim .", p.path))
-                                    .spawn()
-                                    .expect("Error: Failed to run editor")
-                                    .wait()
-                                    .expect("Error: Editor returned a non-zero status");
-                                if cmd.success() {
-                                    println!("Editor exited successfully");
-                                    // quit the run_app
-                                    return Ok(());
-                                } else {
-                                    println!("Editor exited with error");
+                                match execute_command(&p.path) {
+                                    Ok(_) => {
+                                        println!("Editor exited successfully");
+                                        // quit the run_app
+                                        return Ok(());
+                                    }
+                                    Err(_) => {
+                                        println!("Error running editor");
+                                    }
                                 }
                             }
                             None => {
@@ -80,18 +113,14 @@ pub fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: UIApp) -> io::Re
                     }
                     KeyCode::Char(c) => {
                         app.input.push(c);
-                        // filter projects with matching input if input delete the list should be reset
-                        app.projects = read_projects()
-                            .into_iter()
-                            .filter(|p| p.title.contains(&app.input))
-                            .collect();
+                        app.filter_projects();
                     }
                     KeyCode::Backspace => {
                         app.input.pop();
+                        app.filter_projects();
                     }
                     KeyCode::Esc => {
                         app.input_mode = InputMode::Normal;
-                        app.projects = read_projects();
                     }
                     _ => {}
                 },
@@ -108,7 +137,8 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &UIApp) {
             [
                 Constraint::Length(1),
                 Constraint::Length(3),
-                Constraint::Min(1),
+                Constraint::Min(4),
+                Constraint::Length(4),
             ]
             .as_ref(),
         )
@@ -150,6 +180,12 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &UIApp) {
     // render input
     f.render_widget(input, chunks[1]);
 
+    // render log string in list
+    let log =
+        Paragraph::new(app.log.as_ref()).block(Block::default().borders(Borders::ALL).title("LOG"));
+
+    f.render_widget(log, chunks[3]);
+
     match app.input_mode {
         InputMode::Normal =>
             // Hide the cursor. `Frame` does this by default, so we don't need to do anything here
@@ -186,7 +222,6 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &UIApp) {
                 ListItem::new(content)
             }
         })
-        // style the first one with index
         .enumerate()
         .map(|(i, li)| {
             if i == 0 {
