@@ -75,7 +75,7 @@ pub fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: UIApp) -> io::Re
                                 app.log = p.title.clone();
                             }
                             None => {
-                                println!("No project found");
+                                app.log = "No project found".to_string();
                             }
                         }
                     }
@@ -90,24 +90,21 @@ pub fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: UIApp) -> io::Re
                         app.get_input_project();
                     }
                     KeyCode::Enter => {
-                        println!("Navigate to project");
                         let p = app.projects.first();
                         match p {
                             Some(p) => {
-                                println!("Navigating to project: {}", p.path);
                                 match execute_command(&p.path) {
                                     Ok(_) => {
-                                        println!("Editor exited successfully");
                                         // quit the run_app
                                         return Ok(());
                                     }
                                     Err(_) => {
-                                        println!("Error running editor");
+                                        app.log = "No project found".to_string();
                                     }
                                 }
                             }
                             None => {
-                                println!("No project found");
+                                app.log = "No project found".to_string();
                             }
                         }
                     }
