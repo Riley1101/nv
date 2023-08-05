@@ -6,7 +6,7 @@ Currently, startify will directly run `nvim` command in the selected directory.
 
 # Usage
 
-Install the package on Debian based OS,
+Install the package from `app` on Debian based OS ,
 
 ```bash
 // to mark the current path with name
