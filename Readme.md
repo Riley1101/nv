@@ -2,7 +2,7 @@
 
 Currently, nv will directly run `nvim` command in the selected directory.
 
-![Preview](https://github.com/Riley1101/nv/blob/main/example/example.png)
+![Preview](https://github.com/Riley1101/nv/blob/main/example/updated.png)
 
 # Usage
 
