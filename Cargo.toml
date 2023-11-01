@@ -39,7 +39,7 @@ section = "utility"
 priority = "optional"
 assets = [
   [
-    "target/release/nx",
+    "target/release/nv",
     "usr/bin/",
     "755",
   ],
