@@ -32,7 +32,6 @@ impl<'de> Deserialize<'de> for Project {
     where
         D: Deserializer<'de>,
     {
-        //deserializer.deserialize_any(CustomVisitor)
         deserializer.deserialize_map(CustomVisitor)
     }
 }
@@ -91,7 +90,7 @@ pub fn mark() {
 
 pub fn get_home_file() -> String {
     let home = env::var("HOME").unwrap();
-    format!("{}/startify.json", home)
+    format!("{}/nv.json", home)
 }
 
 pub fn check_file() -> bool {
@@ -134,9 +133,8 @@ pub fn read_projects() -> Vec<Project> {
     if !check_file() {
         return vec![];
     };
-    let path  = get_home_file();
-    let contents =
-        fs::read_to_string(path).expect("Should have been able to read the file");
+    let path = get_home_file();
+    let contents = fs::read_to_string(path).expect("Should have been able to read the file");
     let projects: Vec<Project> = serde_json::from_str(&contents).unwrap();
     projects
 }

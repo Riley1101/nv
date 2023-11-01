@@ -5,8 +5,8 @@ use crossterm::{
 };
 use std::env;
 
-use startify::app::{run_app, UIApp};
-use startify::projects::mark;
+use nv::app::{run_app, UIApp};
+use nv::projects::mark;
 use std::{error::Error, io};
 use tui::{backend::CrosstermBackend, Terminal};
 

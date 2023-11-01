@@ -1,5 +1,5 @@
 [package]
-name = "startify"
+name = "nv"
 version = "0.1.0"
 edition = "2021"
 
@@ -39,7 +39,7 @@ section = "utility"
 priority = "optional"
 assets = [
   [
-    "target/release/startify",
+    "target/release/nx",
     "usr/bin/",
     "755",
   ],
