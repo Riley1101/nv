@@ -7,11 +7,11 @@ Currently, nv will directly run `nvim` command in the selected directory.
 # Usage
 
 Install the package.
+
 ```bash
 nv . <project_name>
 ```
 
 ```bash
-// launch the menu
 nv
 ```
