@@ -6,12 +6,13 @@ Currently, nv will directly run `nvim` command in the selected directory.
 
 # Usage
 
-Install the package.
+To add the project to your nv menu
 
 ```bash
 nv . <project_name>
 ```
 
+And then directly search through and enter to open directly in your Neovim.
 ```bash
 nv
 ```
