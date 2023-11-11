@@ -1,0 +1,27 @@
+repo_name: Riley1101/nv
+report_id: 9daea8498cc2f4915dfdeed60144f552
+repo_type: Public
+timestamp: '2023-11-11T17:14:10+00:00'
+requested_by: Riley1101
+provider: github
+branch: main
+detected_tools_count: 2
+tools:
+- name: Rust
+  description: A safe, concurrent, practical language
+  website_url: http://www.rust-lang.org/
+  open_source: true
+  hosted_saas: false
+  category: Languages & Frameworks
+  sub_category: Languages
+  image_url: https://img.stackshare.io/service/1070/v7txhrjp9pdqrkdtxxp0.png
+  detection_source: Repo Metadata
+- name: Git
+  description: Fast, scalable, distributed revision control system
+  website_url: http://git-scm.com/
+  open_source: true
+  hosted_saas: false
+  category: Build, Test, Deploy
+  sub_category: Version Control System
+  image_url: https://img.stackshare.io/service/1046/git.png
+  detection_source: Repo Metadata
